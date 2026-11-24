@@ -1,0 +1,1 @@
+loadstring(game:HttpGet("https://raw.githubusercontent.com/lyraEz/Source-Avatar-Copier/main/src/avatar-copier.lua"))()
