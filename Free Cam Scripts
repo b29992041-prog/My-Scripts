@@ -1,1 +1,372 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+-- ==========================================
+-- UI SETUP (MODERN DESIGN)
+-- ==========================================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = game.CoreGui
+screenGui.Name = "FreecamAndJoystickUI"
+screenGui.ResetOnSpawn = false
+
+-- --- Control Panel ---
+local controlPanel = Instance.new("Frame")
+controlPanel.Size = UDim2.new(0, 200, 0, 140)
+controlPanel.Position = UDim2.new(0, 40, 0, 40)
+controlPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+controlPanel.BackgroundTransparency = 0.15
+controlPanel.Active = true
+controlPanel.Draggable = true
+controlPanel.Parent = screenGui
+
+Instance.new("UICorner", controlPanel).CornerRadius = UDim.new(0, 12)
+local panelStroke = Instance.new("UIStroke", controlPanel)
+panelStroke.Color = Color3.fromRGB(45, 45, 55)
+panelStroke.Thickness = 1.5
+
+-- Title
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -20, 0, 25)
+titleLabel.Position = UDim2.new(0, 10, 0, 8)
+titleLabel.BackgroundTransparency = 1
+titleLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 11
+titleLabel.Text = "FREECAM CONTROL"
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = controlPanel
+
+-- Toggle Freecam Button
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(1, -20, 0, 32)
+toggleBtn.Position = UDim2.new(0, 10, 0, 35)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 136, 255)
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 13
+toggleBtn.Text = "FREECAM: ON"
+toggleBtn.Parent = controlPanel
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 8)
+
+-- Teleport Button
+local tpBtn = Instance.new("TextButton")
+tpBtn.Size = UDim2.new(1, -20, 0, 30)
+tpBtn.Position = UDim2.new(0, 10, 0, 72)
+tpBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+tpBtn.TextColor3 = Color3.fromRGB(220, 220, 240)
+tpBtn.Font = Enum.Font.GothamBold
+tpBtn.TextSize = 12
+tpBtn.Text = "TELEPORT TO CAM"
+tpBtn.Parent = controlPanel
+Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 8)
+
+-- Speed Section Container (Updated with TextBox)
+local speedContainer = Instance.new("Frame")
+speedContainer.Size = UDim2.new(1, -20, 0, 28)
+speedContainer.Position = UDim2.new(0, 10, 0, 105)
+speedContainer.BackgroundTransparency = 1
+speedContainer.Parent = controlPanel
+
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(0.5, 0, 1, 0)
+speedLabel.Position = UDim2.new(0, 0, 0, 0)
+speedLabel.BackgroundTransparency = 1
+speedLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+speedLabel.Font = Enum.Font.GothamMedium
+speedLabel.TextSize = 12
+speedLabel.Text = "Speed:"
+speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+speedLabel.Parent = speedContainer
+
+-- Ô nhập số tốc độ
+local speedBox = Instance.new("TextBox")
+speedBox.Size = UDim2.new(0.5, 0, 1, 0)
+speedBox.Position = UDim2.new(0.5, 0, 0, 0)
+speedBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+speedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedBox.Font = Enum.Font.GothamBold
+speedBox.TextSize = 12
+speedBox.Text = "1.0"
+speedBox.ClearTextOnFocus = false
+speedBox.Parent = speedContainer
+Instance.new("UICorner", speedBox).CornerRadius = UDim.new(0, 6)
+
+local boxStroke = Instance.new("UIStroke", speedBox)
+boxStroke.Color = Color3.fromRGB(60, 60, 75)
+boxStroke.Thickness = 1
+
+
+-- --- Modern Joystick UI ---
+local joystickContainer = Instance.new("Frame")
+joystickContainer.Size = UDim2.new(1, 0, 1, 0)
+joystickContainer.BackgroundTransparency = 1
+joystickContainer.Parent = screenGui
+
+local sizeOuter = 110
+local sizeOuterPos = UDim2.new(0.15, 0, 0.75, 0)
+
+local outer = Instance.new("Frame")
+outer.Size = UDim2.fromOffset(sizeOuter, sizeOuter)
+outer.Position = sizeOuterPos
+outer.AnchorPoint = Vector2.new(0.5, 0.5)
+outer.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+outer.BackgroundTransparency = 0.4
+outer.Parent = joystickContainer
+outer.ZIndex = 1
+outer.Active = true
+Instance.new("UICorner", outer).CornerRadius = UDim.new(1, 0)
+
+local outerStroke = Instance.new("UIStroke", outer)
+outerStroke.Color = Color3.fromRGB(100, 100, 120)
+outerStroke.Transparency = 0.5
+outerStroke.Thickness = 1.5
+
+local sizeInner = 45
+local inner = Instance.new("Frame")
+inner.Size = UDim2.fromOffset(sizeInner, sizeInner)
+inner.Position = UDim2.new(0.5, -sizeInner/2, 0.5, -sizeInner/2)
+inner.BackgroundColor3 = Color3.fromRGB(240, 240, 255)
+inner.BackgroundTransparency = 0.1
+inner.Parent = outer
+inner.ZIndex = 2
+Instance.new("UICorner", inner).CornerRadius = UDim.new(1, 0)
+
+
+-- --- Toggle UI Button (Letter B) ---
+local toggleUiBtn = Instance.new("TextButton")
+toggleUiBtn.Size = UDim2.new(0, 38, 0, 38)
+toggleUiBtn.Position = UDim2.new(0, 40, 0, 190)
+toggleUiBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+toggleUiBtn.BackgroundTransparency = 0.15
+toggleUiBtn.TextColor3 = Color3.fromRGB(220, 220, 240)
+toggleUiBtn.Font = Enum.Font.GothamBold
+toggleUiBtn.TextSize = 15
+toggleUiBtn.Text = "B"
+toggleUiBtn.Active = true
+toggleUiBtn.Draggable = true
+toggleUiBtn.Parent = screenGui
+Instance.new("UICorner", toggleUiBtn).CornerRadius = UDim.new(0, 8)
+local tStroke = Instance.new("UIStroke", toggleUiBtn)
+tStroke.Color = Color3.fromRGB(45, 45, 55)
+tStroke.Thickness = 1.5
+
+local uiVisible = true
+toggleUiBtn.MouseButton1Click:Connect(function()
+    uiVisible = not uiVisible
+    controlPanel.Visible = uiVisible
+    joystickContainer.Visible = uiVisible
+    
+    if uiVisible then
+        toggleUiBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+        tStroke.Color = Color3.fromRGB(45, 45, 55)
+    else
+        toggleUiBtn.BackgroundColor3 = Color3.fromRGB(120, 30, 30)
+        tStroke.Color = Color3.fromRGB(180, 50, 50)
+    end
+end)
+
+
+-- ==========================================
+-- JOYSTICK LOGIC
+-- ==========================================
+local radius = sizeOuter / 2
+local center
+local dragging = false
+local activeTouch
+
+_G.JoystickData = {
+    DraggingLevel = 0,
+    Direction = Vector3.new(0,0,0)
+}
+
+local function toV2(pos)
+    return Vector2.new(pos.X, pos.Y)
+end
+
+local function updateCenter()
+    center = Vector2.new(
+        outer.AbsolutePosition.X + radius,
+        outer.AbsolutePosition.Y + radius
+    )
+end
+
+local function moveInner(posV2)
+    local dir = posV2 - center
+    local dist = math.min(dir.Magnitude, radius)
+    local offset = dir.Magnitude > 0 and dir.Unit * dist or Vector2.new(0,0)
+    inner.Position = UDim2.new(0.5, offset.X - sizeInner/2, 0.5, offset.Y - sizeInner/2)
+    
+    local dragLevel = math.floor((dist / radius) * 100)
+    local dir3 = Vector3.new(offset.X / radius, 0, offset.Y / radius)
+    
+    _G.JoystickData.DraggingLevel = dragLevel
+    _G.JoystickData.Direction = dir3
+end
+
+outer.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if not dragging then
+            updateCenter()
+            dragging = true
+            activeTouch = input
+            moveInner(toV2(input.Position))
+        end
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and activeTouch and input == activeTouch then
+        moveInner(toV2(input.Position))
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if dragging and activeTouch and input == activeTouch then
+        dragging = false
+        activeTouch = nil
+        inner.Position = UDim2.new(0.5, -sizeInner/2, 0.5, -sizeInner/2)
+        _G.JoystickData.DraggingLevel = 0
+        _G.JoystickData.Direction = Vector3.new(0,0,0)
+    end
+end)
+
+_G.HideJoystick = function()
+    joystickContainer.Visible = false
+end
+
+_G.ShowJoystick = function()
+    if uiVisible then
+        joystickContainer.Visible = true
+    end
+end
+
+
+-- ==========================================
+-- FREECAM, SPEED & TELEPORT LOGIC
+-- ==========================================
+local toggle = Instance.new("BoolValue")
+toggle.Name = "FreeMoveEnabled"
+toggle.Value = true
+toggle.Parent = player
+
+local origMinZoom = player.CameraMinZoomDistance
+local origMaxZoom = player.CameraMaxZoomDistance
+
+local movePart = Instance.new("Part")
+movePart.Size = Vector3.new(0, 0, 0)
+movePart.Anchored = true
+movePart.Transparency = 1
+movePart.CanCollide = false
+movePart.Parent = workspace
+movePart.CFrame = camera.CFrame
+movePart.Name = "CameraPart"
+
+local currentPos = movePart.Position
+
+-- SPEED VARIABLES & UNLIMITED DECIMAL INPUT
+local speedMultiplier = 1.0
+
+local function parseSpeed(txt)
+    local clean = tostring(txt or ""):gsub(",", "."):gsub("%s+", "")
+    local num = tonumber(clean)
+    if num and num >= 0 and num == num and num ~= math.huge then
+        return num
+    end
+    return nil
+end
+
+speedBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local num = parseSpeed(speedBox.Text)
+    if num then
+        speedMultiplier = num
+    end
+end)
+
+speedBox.FocusLost:Connect(function()
+    local num = parseSpeed(speedBox.Text)
+    if num then
+        speedMultiplier = num
+        speedBox.Text = tostring(num)
+    else
+        speedBox.Text = tostring(speedMultiplier)
+    end
+end)
+
+-- TELEPORT FEATURE LOGIC
+tpBtn.MouseButton1Click:Connect(function()
+    local character = player.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        character.HumanoidRootPart.CFrame = movePart.CFrame + Vector3.new(0, 3, 0)
+    end
+end)
+
+local function applyToggle(state)
+    if state then
+        camera.CameraSubject = movePart
+        camera.CameraType = Enum.CameraType.Custom
+        player.CameraMinZoomDistance = 0
+        player.CameraMaxZoomDistance = 0
+        
+        toggleBtn.Text = "FREECAM: ON"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 136, 255)
+        if _G.ShowJoystick then _G.ShowJoystick() end
+    else
+        camera.CameraSubject = player.Character and player.Character:FindFirstChild("Humanoid") or nil
+        player.CameraMinZoomDistance = origMinZoom
+        player.CameraMaxZoomDistance = origMaxZoom
+        
+        toggleBtn.Text = "FREECAM: OFF"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+        if _G.HideJoystick then _G.HideJoystick() end
+    end
+end
+
+toggle.Changed:Connect(applyToggle)
+applyToggle(toggle.Value)
+
+local debounce = false
+toggleBtn.MouseButton1Click:Connect(function()
+    if debounce then return end
+    debounce = true
+    toggle.Value = not toggle.Value
+    
+    if toggle.Value then
+        currentPos = camera.CFrame.Position
+        movePart.CFrame = camera.CFrame
+    end
+    
+    task.delay(0.2, function() debounce = false end)
+end)
+
+RunService.RenderStepped:Connect(function(dt)
+    if not toggle.Value then return end
+    
+    local dir = _G.JoystickData.Direction
+    local level = _G.JoystickData.DraggingLevel
+
+    if level > 1 then
+        local moveSpeed = (level * 0.02) * speedMultiplier 
+        
+        local camCF = camera.CFrame
+        local forward = camCF.LookVector
+        local right = camCF.RightVector
+        
+        local moveDir = (forward * -dir.Z) + (right * dir.X)
+        moveDir += Vector3.new(0, dir.Y, 0)
+        
+        if moveDir.Magnitude > 0 then
+            moveDir = moveDir.Unit
+            currentPos = currentPos + moveDir * moveSpeed * dt * 60
+        end
+    end
+
+    local camLook = camera.CFrame.LookVector
+    local yaw = math.atan2(camLook.X, camLook.Z)
+    movePart.CFrame = CFrame.new(currentPos) * CFrame.Angles(0, yaw, 0)
+end)
 
